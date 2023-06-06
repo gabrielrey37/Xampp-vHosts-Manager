@@ -40,7 +40,7 @@ class Application
 
             Console::line($message, false);
 
-            $this->powerExec('cscript "' . $this->paths['pathRegister'] . '" "' .$this->paths['appDir']. '"', '-w -i -e -n', $outputVal, $exitCode);
+            $this->powerExec('cscript "' . $this->paths['pathRegister'] . '" "' . $this->paths['appDir'] . '"', '-w -i -e -n', $outputVal, $exitCode);
 
             if ($exitCode == 0) {
                 Console::line('Successful', true, max(73 - strlen($message), 1));
@@ -95,7 +95,7 @@ class Application
 
                 Console::line($message, false);
 
-            $this->powerExec('"' . $this->paths['xamppDir'] . '\apache_start.bat"', '-i -n');
+                $this->powerExec('"' . $this->paths['xamppDir'] . '\apache_start.bat"', '-i -n');
 
                 Console::line('Successful', true, max(73 - strlen($message), 1));
             }
@@ -225,7 +225,7 @@ class Application
         $certSerial = null;
 
         // Get Cert serial number
-        exec('CertUtil -enterprise -silent -verify "'. $this->paths['caCertDir'] .'\cacert.crt"', $arrOutput, $exitCode);
+        exec('CertUtil -enterprise -silent -verify "' . $this->paths['caCertDir'] . '\cacert.crt"', $arrOutput, $exitCode);
 
         foreach ($arrOutput as $line) {
             $line = trim($line);
@@ -262,16 +262,17 @@ class Application
 
     protected function loadAdditionalPaths()
     {
-        if (! array_key_exists('apacheDir', $this->paths)) {
+        if (!array_key_exists('apacheDir', $this->paths)) {
             Console::breakline();
             Console::terminate('The identification of the path to Apache directory has not yet been conducted', 1);
         }
 
-        $this->paths['vhostCertDir']      = $this->paths['apacheDir'] . '\conf\extra\certs';
-        $this->paths['vhostCertKeyDir']   = $this->paths['apacheDir'] . '\conf\extra\keys';
-        $this->paths['vhostConfigDir']    = $this->paths['apacheDir'] . '\conf\extra\vhosts';
-        $this->paths['vhostSSLConfigDir'] = $this->paths['apacheDir'] . '\conf\extra\vhosts_ssl';
-        $this->paths['opensslBin']        = $this->paths['apacheDir'] . '\bin\openssl.exe';
+        $this->paths['vhostCertDir']        = $this->paths['apacheDir'] . '\conf\extra\certs';
+        $this->paths['vhostCertKeyDir']     = $this->paths['apacheDir'] . '\conf\extra\keys';
+        $this->paths['vhostConfigDir']      = $this->paths['apacheDir'] . '\conf\extra\vhosts';
+        $this->paths['vhostSSLConfigDir']   = $this->paths['apacheDir'] . '\conf\extra\vhosts_ssl';
+        $this->paths['vhostXAMPPConfigDir'] = $this->paths['apacheDir'] . '\conf\extra\xampp';
+        $this->paths['opensslBin']          = $this->paths['apacheDir'] . '\bin\openssl.exe';
 
         // Set environment variables
         putenv('XVHM_VHOST_CERT_DIR=' . $this->paths['vhostCertDir']);
@@ -290,18 +291,19 @@ class Application
         $appDir = realpath(getenv('XVHM_APP_DIR'));
         $srcDir = $appDir . '\src';
 
-        $this->paths['appDir']                 = $appDir;
-        $this->paths['tmpDir']                 = $appDir . '\tmp';
-        $this->paths['caCertDir']              = $appDir . '\cacert';
-        $this->paths['settingsStorage']        = $appDir . '\settings.ini';
-        $this->paths['caCertGenScript']        = $srcDir . '\Tools\cacert_generate.bat';
-        $this->paths['caCertGenConfig']        = $srcDir . '\Tools\cacert_generate.cnf';
-        $this->paths['vhostConfigTemplate']    = $srcDir . '\Templates\vhost_config\vhost.conf.tpl';
-        $this->paths['vhostSSLConfigTemplate'] = $srcDir . '\Templates\vhost_config\vhost_ssl.conf.tpl';
-        $this->paths['vhostCertGenScript']     = $srcDir . '\Tools\vhostcert_generate.bat';
-        $this->paths['vhostCertGenConfig']     = $srcDir . '\Tools\vhostcert_generate.cnf';
-        $this->paths['pathRegister']           = $srcDir . '\Tools\path_register.vbs';
-        $this->paths['powerExecutor']          = $srcDir . '\Tools\power_exec.vbs';
+        $this->paths['appDir']                   = $appDir;
+        $this->paths['tmpDir']                   = $appDir . '\tmp';
+        $this->paths['caCertDir']                = $appDir . '\cacert';
+        $this->paths['settingsStorage']          = $appDir . '\settings.ini';
+        $this->paths['caCertGenScript']          = $srcDir . '\Tools\cacert_generate.bat';
+        $this->paths['caCertGenConfig']          = $srcDir . '\Tools\cacert_generate.cnf';
+        $this->paths['vhostConfigTemplate']      = $srcDir . '\Templates\vhost_config\vhost.conf.tpl';
+        $this->paths['vhostSSLConfigTemplate']   = $srcDir . '\Templates\vhost_config\vhost_ssl.conf.tpl';
+        $this->paths['vhostXAMPPConfigTemplate'] = $srcDir . '\Templates\vhost_config\xampp.conf.tpl';
+        $this->paths['vhostCertGenScript']       = $srcDir . '\Tools\vhostcert_generate.bat';
+        $this->paths['vhostCertGenConfig']       = $srcDir . '\Tools\vhostcert_generate.cnf';
+        $this->paths['pathRegister']             = $srcDir . '\Tools\path_register.vbs';
+        $this->paths['powerExecutor']            = $srcDir . '\Tools\power_exec.vbs';
 
         if (array_key_exists('SystemRoot', $_SERVER)) {
             $this->paths['winHostsFile'] = realpath($_SERVER['SystemRoot'] . '\System32\drivers\etc\hosts');
@@ -310,7 +312,7 @@ class Application
         }
 
         // Prepare TMP dir
-        if (! is_dir($this->paths['tmpDir'])) {
+        if (!is_dir($this->paths['tmpDir'])) {
             @mkdir($this->paths['tmpDir'], 0755, true);
         }
 
@@ -331,7 +333,7 @@ class Application
         $phpDir    = $this->setting->get('DirectoryPaths', 'Php');
 
         // define Xampp directory path
-        if (! $xamppDir || ! maybe_xamppdir($xamppDir)) {
+        if (!$xamppDir || !maybe_xamppdir($xamppDir)) {
             Console::breakline();
 
             $message = 'Cannot find Xampp directory.' . PHP_EOL;
@@ -343,11 +345,11 @@ class Application
         $this->paths['xamppDir'] = $xamppDir;
 
         // define Apache directory path
-        if (! $apacheDir) {
+        if (!$apacheDir) {
             $apacheDir = $xamppDir . '\apache';
         }
 
-        if (! maybe_apachedir($apacheDir)) {
+        if (!maybe_apachedir($apacheDir)) {
             Console::breakline();
 
             $message = 'Cannot find Apache directory.' . PHP_EOL;
@@ -359,11 +361,11 @@ class Application
         $this->paths['apacheDir'] = $apacheDir;
 
         // define PHP directory path
-        if (! $phpDir) {
+        if (!$phpDir) {
             $phpDir = $xamppDir . '\php';
         }
 
-        if (! maybe_phpdir($phpDir)) {
+        if (!maybe_phpdir($phpDir)) {
             Console::breakline();
 
             $message = 'Cannot find PHP directory.' . PHP_EOL;
