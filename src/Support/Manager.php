@@ -21,7 +21,7 @@ class Manager extends Application
     {
         $hostName = $this->tryGetHostName($hostName);
 
-        if (! $this->isExistHost($hostName)) {
+        if (!$this->isExistHost($hostName)) {
             Console::terminate('Sorry! Do not found any virtual host with name "' . $hostName . '".');
         }
 
@@ -61,7 +61,7 @@ class Manager extends Application
 
             Console::breakline();
             Console::hrline();
-            Console::line($count . '. [' . $hostName .']');
+            Console::line($count . '. [' . $hostName . ']');
             Console::breakline();
             $this->presentHostInfo($hostInfo, false, 4);
 
@@ -72,11 +72,11 @@ class Manager extends Application
 
                 Console::breakline();
                 Console::hrline();
-                Console::line('There are still ' .$remain. ' more ' . (($remain > 1) ? 'records' : 'record') . '.');
+                Console::line('There are still ' . $remain . ' more ' . (($remain > 1) ? 'records' : 'record') . '.');
 
                 $continue = Console::confirm('Do you want to continue view more?');
 
-                if (! $continue) {
+                if (!$continue) {
                     Console::terminate();
                 }
             }
@@ -108,13 +108,15 @@ class Manager extends Application
             $addSSL   = Console::confirm('Do you want to add SSL certificate for this host?');
             $hostPort = $this->xamppConfig->get('ServicePorts', 'Apache', '80');
 
+            $phpHandler = Console::ask('Enter PHP handler for this host (null for not affect)', '');
+
             // Start adding
             Console::breakline();
             Console::hrline();
             Console::line('Start creating new virtual host "' . $hostName . '".');
             Console::breakline();
 
-            if (! is_dir($documentRoot)) {
+            if (!is_dir($documentRoot)) {
                 // Create docuemnt root
                 $this->createDocumentRoot($documentRoot);
             }
@@ -147,6 +149,16 @@ class Manager extends Application
                 $this->addSSLtoHost($serverName, false);
             }
 
+            if ($phpHandler) {
+                Console::breakline();
+                Console::hrline();
+                Console::line('Start adding PHP handler for virtual host "' . $hostName . '".');
+                Console::breakline();
+
+                // Add PHP handler for this host
+                $this->addPHPHandlertoHost($serverName, $phpHandler, false);
+            }
+
             // Show recent host info
             Console::breakline();
             Console::line('Information about the virtual host that has just been created is:');
@@ -176,14 +188,14 @@ class Manager extends Application
         $hostName = $this->tryGetHostName($hostName, $exitIfFailed);
 
         if (!is_null($hostName)) {
-            if (! $this->isExistHost($hostName)) {
+            if (!$this->isExistHost($hostName)) {
                 Console::terminate('Sorry! Do not found any virtual host with name "' . $hostName . '".');
             }
 
             $confirmRemove = Console::confirm('Are you sure you want to remove virtual host "' . $hostName . '"?', false);
             Console::breakline();
 
-            if (! $confirmRemove) {
+            if (!$confirmRemove) {
                 Console::terminate('Cancel the action.');
             }
 
@@ -196,17 +208,17 @@ class Manager extends Application
             // Remove vhost config file
             $this->removeFile($hostInfo['vhostConfigFile'], 'Removing host config file...');
 
-            if (! is_null($hostInfo['sslConfigFile'])) {
+            if (!is_null($hostInfo['sslConfigFile'])) {
                 // Remove vhost SSL config file
                 $this->removeFile($hostInfo['sslConfigFile'], 'Removing SSL config file...');
             }
 
-            if (! is_null($hostInfo['certFile'])) {
+            if (!is_null($hostInfo['certFile'])) {
                 // Remove SSL certificate file
                 $this->removeFile($hostInfo['certFile'], 'Removing SSL certificate file...');
             }
 
-            if (! is_null($hostInfo['certKeyFile'])) {
+            if (!is_null($hostInfo['certKeyFile'])) {
                 // Remove SSL certificate key file
                 $this->removeFile($hostInfo['certKeyFile'], 'Removing SSL certificate key file...');
             }
@@ -239,7 +251,7 @@ class Manager extends Application
         $hostName = $this->tryGetHostName($hostName, $exitIfFailed);
 
         if (!is_null($hostName)) {
-            if (! $this->isExistHost($hostName)) {
+            if (!$this->isExistHost($hostName)) {
                 Console::terminate('Sorry! Do not found any virtual host with name "' . $hostName . '".');
             }
 
@@ -261,7 +273,7 @@ class Manager extends Application
             // Create the certificate and private key file
             $createdCertAndKey = $this->createCertKeyFile($hostName);
 
-            if (! $createdCertAndKey) {
+            if (!$createdCertAndKey) {
                 if ($processStandalone) {
                     Console::breakline();
                     Console::terminate('Error while create SSL certificate files', 1);
@@ -289,8 +301,8 @@ class Manager extends Application
             // Update vhosts info
             $this->vhosts[$hostName]['sslPort']       = $sslPort;
             $this->vhosts[$hostName]['sslConfigFile'] = $sslConfigFile;
-            $this->vhosts[$hostName]['certFile']      = $this->paths['vhostCertDir'] .DS. $hostName . '.cert';
-            $this->vhosts[$hostName]['certKeyFile']   = $this->paths['vhostCertKeyDir'] .DS. $hostName . '.key';
+            $this->vhosts[$hostName]['certFile']      = $this->paths['vhostCertDir'] . DS . $hostName . '.cert';
+            $this->vhosts[$hostName]['certKeyFile']   = $this->paths['vhostCertKeyDir'] . DS . $hostName . '.key';
 
             if ($processStandalone) {
                 // Show recent host info
@@ -321,18 +333,90 @@ class Manager extends Application
         }
     }
 
-    public function removeSSLOfHost($hostName = null, $exitIfFailed = true)
+    public function addPHPHandlertoHost($hostName = null, $phpHandler, $processStandalone = true, $exitIfFailed = true)
     {
         $hostName = $this->tryGetHostName($hostName, $exitIfFailed);
 
         if (!is_null($hostName)) {
-            if (! $this->isExistHost($hostName)) {
+            if (!$this->isExistHost($hostName)) {
                 Console::terminate('Sorry! Do not found any virtual host with name "' . $hostName . '".');
             }
 
             $hostInfo = $this->vhosts[$hostName];
 
-            if (! $this->isSSLHost($hostInfo)) {
+            /* TODO
+            if ($this->isSSLHost($hostInfo)) {
+                Console::terminate('Sorry! This host has been added an SSL certificate.');
+            }
+            */
+
+            if ($processStandalone) {
+                // Start adding
+                Console::hrline();
+                Console::line('Start adding PHP handler for virtual host "' . $hostName . '".');
+                Console::breakline();
+            }
+
+            // Create vhost SSL config file
+            $XAMPPConfigFile = $this->createXAMPPConfigFile($hostName, $hostInfo['documentRoot'], $phpHandler);
+
+            if (is_null($XAMPPConfigFile)) {
+                if ($processStandalone) {
+                    Console::breakline();
+                    Console::terminate('Error while create xampp config file', 1);
+                } else {
+                    Console::line('Cancelling adding PHP handler for this host...');
+
+                    return;
+                }
+            }
+
+            // Update vhosts info
+            $this->vhosts[$hostName]['XAMPPConfigFile']   = $this->paths['vhostXAMPPConfigDir'] . DS . $hostName . '.conf';
+
+            if ($processStandalone) {
+                // Show recent host info
+                Console::breakline();
+                Console::line('Information about the virtual host that has just been updated is:');
+                Console::breakline();
+                $this->presentHostInfo($this->vhosts[$hostName], true, 4);
+
+                // Ask to add SSL for another
+                Console::breakline();
+                Console::hrline();
+
+                /*
+                $addMore = Console::confirm('Do you want to add SSL for another virtual host?', false);
+
+                if ($addMore) {
+                    Console::breakline();
+                    $this->addSSLtoHost(null, true, false);
+                }
+                */
+            }
+        }
+
+        if ($processStandalone) {
+            // Ask restart Apache
+            parent::restartApache();
+
+            Console::breakline();
+            Console::terminate('All jobs are completed.');
+        }
+    }
+
+    public function removeSSLOfHost($hostName = null, $exitIfFailed = true)
+    {
+        $hostName = $this->tryGetHostName($hostName, $exitIfFailed);
+
+        if (!is_null($hostName)) {
+            if (!$this->isExistHost($hostName)) {
+                Console::terminate('Sorry! Do not found any virtual host with name "' . $hostName . '".');
+            }
+
+            $hostInfo = $this->vhosts[$hostName];
+
+            if (!$this->isSSLHost($hostInfo)) {
                 Console::terminate('Sorry! This host has not added an SSL certificate yet.');
             }
 
@@ -340,7 +424,7 @@ class Manager extends Application
 
             Console::breakline();
 
-            if (! $confirmRemove) {
+            if (!$confirmRemove) {
                 Console::terminate('Cancel the action.');
             }
 
@@ -394,7 +478,7 @@ class Manager extends Application
         $hostName = $this->tryGetHostName($hostName, $exitIfFailed);
 
         if (!is_null($hostName)) {
-            if (! $this->isExistHost($hostName)) {
+            if (!$this->isExistHost($hostName)) {
                 Console::terminate('Sorry! Do not found any virtual host with name "' . $hostName . '".');
             }
 
@@ -422,7 +506,7 @@ class Manager extends Application
             Console::line('Start changing document root for virtual host "' . $hostName . '".');
             Console::breakline();
 
-            if (! is_dir($newDocRoot)) {
+            if (!is_dir($newDocRoot)) {
                 $this->createDocumentRoot($newDocRoot, 'Creating new document root for virtual host...');
             }
 
@@ -435,7 +519,7 @@ class Manager extends Application
             $vhostConfigContent    = preg_replace($replacePattern, unixstyle_path($newDocRoot), $vhostConfigContent);
             $vhostConfigFileUpdate = @file_put_contents($hostInfo['vhostConfigFile'], $vhostConfigContent);
 
-            if (! $vhostConfigFileUpdate) {
+            if (!$vhostConfigFileUpdate) {
                 Console::line('Failed', true, max(77 - strlen($message), 1));
                 Console::breakline();
                 Console::terminate('Error while updating host config file.', 1);
@@ -453,7 +537,7 @@ class Manager extends Application
                 $sslConfigContent    = preg_replace($replacePattern, unixstyle_path($newDocRoot), $sslConfigContent);
                 $sslConfigFileUpdate = @file_put_contents($hostInfo['sslConfigFile'], $sslConfigContent);
 
-                if (! $sslConfigFileUpdate) {
+                if (!$sslConfigFileUpdate) {
                     Console::line('Failed', true, max(77 - strlen($message), 1));
                     Console::breakline();
                     Console::terminate('Error while updating SSL config file.', 1);
@@ -492,19 +576,23 @@ class Manager extends Application
 
     private function prepareDirectories()
     {
-        if (! is_dir($this->paths['vhostConfigDir'])) {
+        if (!is_dir($this->paths['vhostConfigDir'])) {
             mkdir($this->paths['vhostConfigDir'], 0755, true);
         }
 
-        if (! is_dir($this->paths['vhostSSLConfigDir'])) {
+        if (!is_dir($this->paths['vhostSSLConfigDir'])) {
             mkdir($this->paths['vhostSSLConfigDir'], 0755, true);
         }
 
-        if (! is_dir($this->paths['vhostCertDir'])) {
+        if (!is_dir($this->paths['vhostXAMPPConfigDir'])) {
+            mkdir($this->paths['vhostXAMPPConfigDir'], 0755, true);
+        }
+
+        if (!is_dir($this->paths['vhostCertDir'])) {
             mkdir($this->paths['vhostCertDir'], 0755, true);
         }
 
-        if (! is_dir($this->paths['vhostCertKeyDir'])) {
+        if (!is_dir($this->paths['vhostCertKeyDir'])) {
             mkdir($this->paths['vhostCertKeyDir'], 0755, true);
         }
     }
@@ -520,7 +608,7 @@ class Manager extends Application
             return $documentRoot;
         }
 
-        return absolute_path($this->paths['xamppDir'] .DS. $documentRoot);
+        return absolute_path($this->paths['xamppDir'] . DS . $documentRoot);
     }
 
     private function normalizeHostName($hostName)
@@ -549,7 +637,7 @@ class Manager extends Application
         $message  = $message ?: 'Enter virtual host name';
         $repeat   = 0;
 
-        while (! $hostName || ! filter_var('http://' . $hostName, FILTER_VALIDATE_URL)) {
+        while (!$hostName || !filter_var('http://' . $hostName, FILTER_VALIDATE_URL)) {
             if ($repeat == ($tryRepeat + 1)) {
                 Console::line('You have entered an incorrect format many times.');
                 Console::line('Cancel current job.');
@@ -628,11 +716,11 @@ class Manager extends Application
                         if ($tagName == 'VirtualHost') {
                             $config['VirtualHost'] = $value;
                         } else {
-                            if (! array_key_exists($tagName, $config)) {
+                            if (!array_key_exists($tagName, $config)) {
                                 $config[$tagName] = [];
                             }
 
-                            if (! array_key_exists($value, $config[$tagName])) {
+                            if (!array_key_exists($value, $config[$tagName])) {
                                 $config[$tagName][$value] = [];
                             }
 
@@ -648,7 +736,7 @@ class Manager extends Application
                         $current_tag_item = null;
                     }
                 } else {
-                    if ($start_tag_config && (! $end_tag_config) && (! is_null($current_tag)) && (! is_null($current_tag_item))) {
+                    if ($start_tag_config && (!$end_tag_config) && (!is_null($current_tag)) && (!is_null($current_tag_item))) {
                         $config[$current_tag][$current_tag_item][$matches['key']] = $value;
                     } else {
                         $config[$matches['key']] = $value;
@@ -662,25 +750,25 @@ class Manager extends Application
 
     private function getHostInfo($vhostConfigFile)
     {
-        if (! is_file($vhostConfigFile)) {
+        if (!is_file($vhostConfigFile)) {
             Console::terminate('The vhost config file with name "' . $vhostConfigFile . '" does not exist.');
         }
 
         $baseName  = basename($vhostConfigFile, ".conf");
 
-        $sslConfigFile = $this->paths['vhostSSLConfigDir'] .DS. $baseName . '.conf';
+        $sslConfigFile = $this->paths['vhostSSLConfigDir'] . DS . $baseName . '.conf';
         $sslConfigFile = (is_file($sslConfigFile)) ? realpath($sslConfigFile) : null;
 
-        $certFile = $this->paths['vhostCertDir'] .DS. $baseName . '.cert';
+        $certFile = $this->paths['vhostCertDir'] . DS . $baseName . '.cert';
         $certFile = (is_file($certFile)) ? realpath($certFile) : null;
 
-        $certKeyFile = $this->paths['vhostCertKeyDir'] .DS. $baseName . '.key';
+        $certKeyFile = $this->paths['vhostCertKeyDir'] . DS . $baseName . '.key';
         $certKeyFile = (is_file($certKeyFile)) ? realpath($certKeyFile) : null;
 
         $vhostConfigs = $this->readHostConfigFile($vhostConfigFile);
         $hostPort     = explode(':', $vhostConfigs['VirtualHost'])[1];
 
-        if (! is_null($sslConfigFile)) {
+        if (!is_null($sslConfigFile)) {
             $sslConfigs = $this->readHostConfigFile($sslConfigFile);
             $sslPort    = explode(':', $sslConfigs['VirtualHost'])[1];
         } else {
@@ -706,7 +794,7 @@ class Manager extends Application
     private function loadAllHosts()
     {
         // open vhosts dir
-        if (! $handle = opendir($this->paths['vhostConfigDir'])) {
+        if (!$handle = opendir($this->paths['vhostConfigDir'])) {
             return;
         }
 
@@ -718,10 +806,10 @@ class Manager extends Application
                 continue;
             }
 
-            $hostInfo   = $this->getHostInfo($this->paths['vhostConfigDir'] .DS. $item);
+            $hostInfo   = $this->getHostInfo($this->paths['vhostConfigDir'] . DS . $item);
             $serverName = $hostInfo['serverName'];
 
-            if (! array_key_exists($serverName, $hosts)) {
+            if (!array_key_exists($serverName, $hosts)) {
                 $hosts[$serverName] = $hostInfo;
             }
         }
@@ -769,7 +857,7 @@ class Manager extends Application
         $replace[] = unixstyle_path($documentRoot);
 
         $template   = $this->paths['vhostConfigTemplate'];
-        $configFile = $this->paths['vhostConfigDir'] .DS. $hostName . '.conf';
+        $configFile = $this->paths['vhostConfigDir'] . DS . $hostName . '.conf';
         $content    = str_replace($search, $replace, file_get_contents($template));
 
         if (file_put_contents($configFile, $content)) {
@@ -803,7 +891,7 @@ class Manager extends Application
         $replace[] = relative_path($this->paths['apacheDir'], $this->paths['vhostCertKeyDir'], '/') . '/' . $hostName . '.key';
 
         $template   = $this->paths['vhostSSLConfigTemplate'];
-        $configFile = $this->paths['vhostSSLConfigDir'] .DS. $hostName . '.conf';
+        $configFile = $this->paths['vhostSSLConfigDir'] . DS . $hostName . '.conf';
         $content    = str_replace($search, $replace, file_get_contents($template));
 
         if (file_put_contents($configFile, $content)) {
@@ -815,6 +903,40 @@ class Manager extends Application
         return null;
     }
 
+    private function createXAMPPConfigFile($hostName, $documentRoot, $phpVersion = false)
+    {
+        if ($phpVersion){
+            $message = 'Generating SSL config file...';
+            Console::line($message, false);
+    
+            $search    = [];
+            $search[]  = '{{host_name}}';
+            $search[]  = '{{document_root}}';
+            $search[]  = '{{php_version}}';
+    
+            $replace   = [];
+            $replace[] = $hostName;
+            $replace[] = unixstyle_path($documentRoot);
+            $replace[] = $phpVersion;
+    
+            $template   = $this->paths['vhostXAMPPConfigTemplate'];
+            $configFile = $this->paths['vhostXAMPPConfigDir'] . DS . $hostName . '.conf';
+            $content    = str_replace($search, $replace, file_get_contents($template));
+    
+            if (file_put_contents($configFile, $content)) {
+                Console::line('Successful', true, max(73 - strlen($message), 1));
+                return realpath($configFile);
+            }
+    
+            Console::line('Failed', true, max(77 - strlen($message), 1));
+        }
+        else{
+            Console::line('No PHP version specified', true);
+        }
+        
+        return null;
+    }
+
     private function createCertKeyFile($hostName)
     {
         $message = 'Generating the cert and private key files...';
@@ -822,7 +944,7 @@ class Manager extends Application
 
         $this->powerExec('"' . $this->paths['vhostCertGenScript'] . '" "' . $hostName . '"', '-w -i -n', $arrOutput, $exitCode);
 
-        if ($exitCode == 0 && is_file($this->paths['vhostCertDir'] .DS. $hostName . '.cert') && is_file($this->paths['vhostCertKeyDir'] .DS. $hostName . '.key')) {
+        if ($exitCode == 0 && is_file($this->paths['vhostCertDir'] . DS . $hostName . '.cert') && is_file($this->paths['vhostCertKeyDir'] . DS . $hostName . '.key')) {
             Console::line('Successful', true, max(73 - strlen($message), 1));
             return true;
         }
@@ -842,7 +964,7 @@ class Manager extends Application
 
         Console::line($message, false);
 
-        if (! is_array($hostNames)) {
+        if (!is_array($hostNames)) {
             $tempArr   = [];
             $tempArr[] = $hostNames;
             $hostNames = $tempArr;
@@ -859,10 +981,10 @@ class Manager extends Application
                 }
             }
 
-            if (! is_null($content)) {
+            if (!is_null($content)) {
                 $result = @file_put_contents($this->paths['winHostsFile'], $content, FILE_APPEND);
 
-                if (! $result) {
+                if (!$result) {
                     Console::line('Failed', true, max(77 - strlen($message), 1));
 
                     return false;
@@ -881,7 +1003,7 @@ class Manager extends Application
 
         Console::line($message, false);
 
-        if (! is_array($hostNames)) {
+        if (!is_array($hostNames)) {
             $tempArr   = [];
             $tempArr[] = $hostNames;
             $hostNames = $tempArr;
@@ -905,7 +1027,7 @@ class Manager extends Application
                     }
                 }
 
-                if (! $matchLine) {
+                if (!$matchLine) {
                     $keepLines[] = $line;
                 }
             }
@@ -913,7 +1035,7 @@ class Manager extends Application
             $content = implode(PHP_EOL, $keepLines);
             $updated = @file_put_contents($this->paths['winHostsFile'], $content);
 
-            if (! $updated) {
+            if (!$updated) {
                 Console::line('Failed', true, max(73 - strlen($message), 1));
 
                 return false;
@@ -927,7 +1049,7 @@ class Manager extends Application
 
     private function removeFile($filePath, $message = null)
     {
-        if (! is_null($message)) {
+        if (!is_null($message)) {
             Console::line($message, false);
             $removed = @unlink($filePath);
 
