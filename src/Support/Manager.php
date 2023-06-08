@@ -223,6 +223,11 @@ class Manager extends Application
                 $this->removeFile($hostInfo['certKeyFile'], 'Removing SSL certificate key file...');
             }
 
+            if (!is_null($hostInfo['XAMPPConfigFile'])) {
+                // Remove SSL certificate key file
+                $this->removeFile($hostInfo['XAMPPConfigFile'], 'Removing XAMPP config file...');
+            }
+
             // Remove host name in Windows hosts file
             $this->removeOutOfWinHosts([$hostInfo['serverName'], $hostInfo['serverAlias']]);
 
@@ -775,17 +780,21 @@ class Manager extends Application
             $sslPort = null;
         }
 
+        $xamppConfig = $this->paths['vhostXAMPPConfigDir'] . DS . $baseName . '.conf';
+        $xamppConfig = (is_file($xamppConfig)) ? realpath($xamppConfig) : null;
+
         $output = [
-            'vhostConfigFile' => $vhostConfigFile,
-            'hostPort'        => $hostPort,
-            'serverName'      => $vhostConfigs['ServerName'],
-            'serverAlias'     => $vhostConfigs['ServerAlias'] ?: null,
-            'serverAdmin'     => $vhostConfigs['ServerAdmin'] ?: null,
-            'documentRoot'    => osstyle_path($vhostConfigs['DocumentRoot']),
-            'sslConfigFile'   => $sslConfigFile,
-            'sslPort'         => $sslPort,
-            'certFile'        => $certFile,
-            'certKeyFile'     => $certKeyFile
+            'vhostConfigFile'   => $vhostConfigFile,
+            'hostPort'          => $hostPort,
+            'serverName'        => $vhostConfigs['ServerName'],
+            'serverAlias'       => $vhostConfigs['ServerAlias'] ?: null,
+            'serverAdmin'       => $vhostConfigs['ServerAdmin'] ?: null,
+            'documentRoot'      => osstyle_path($vhostConfigs['DocumentRoot']),
+            'sslConfigFile'     => $sslConfigFile,
+            'sslPort'           => $sslPort,
+            'certFile'          => $certFile,
+            'certKeyFile'       => $certKeyFile,
+            'XAMPPConfigFile'   => $xamppConfig,
         ];
 
         return $output;
@@ -905,35 +914,34 @@ class Manager extends Application
 
     private function createXAMPPConfigFile($hostName, $documentRoot, $phpVersion = false)
     {
-        if ($phpVersion){
+        if ($phpVersion) {
             $message = 'Generating SSL config file...';
             Console::line($message, false);
-    
+
             $search    = [];
             $search[]  = '{{host_name}}';
             $search[]  = '{{document_root}}';
             $search[]  = '{{php_version}}';
-    
+
             $replace   = [];
             $replace[] = $hostName;
             $replace[] = unixstyle_path($documentRoot);
             $replace[] = $phpVersion;
-    
+
             $template   = $this->paths['vhostXAMPPConfigTemplate'];
             $configFile = $this->paths['vhostXAMPPConfigDir'] . DS . $hostName . '.conf';
             $content    = str_replace($search, $replace, file_get_contents($template));
-    
+
             if (file_put_contents($configFile, $content)) {
                 Console::line('Successful', true, max(73 - strlen($message), 1));
                 return realpath($configFile);
             }
-    
+
             Console::line('Failed', true, max(77 - strlen($message), 1));
-        }
-        else{
+        } else {
             Console::line('No PHP version specified', true);
         }
-        
+
         return null;
     }
 
@@ -1099,6 +1107,7 @@ class Manager extends Application
             Console::line($indentString . '- SSL config file       : ' . $hostInfo['sslConfigFile']);
             Console::line($indentString . '- SSL certificate file  : ' . $hostInfo['certFile']);
             Console::line($indentString . '- SSL private key file  : ' . $hostInfo['certKeyFile']);
+            Console::line($indentString . '- Xampp php handler     : ' . $hostInfo['XAMPPConfigFile']);
             Console::breakline();
             Console::line($indentString . '[+] Urls information');
             Console::line($indentString . '--------------------');
